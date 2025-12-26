@@ -48,7 +48,7 @@
         }
         #langBtn:hover {
             background-color: #0055aa;
-        }/
+        }
         .tip-window {
             position: absolute;
             height: 40px;
@@ -182,7 +182,7 @@
             'id': 8,
             'ja': 14 
         };
-        ）
+        
         const BASE_WIDTH_CONFIG = {
             'id': 0,
             'ja': 30  
@@ -199,7 +199,7 @@
         let dragTarget = null;
         let dragOffsetX = 0;
         let dragOffsetY = 0;
-）
+
         function isOverlapping(rect1, rect2, gap) {
             return !(
                 rect1.x + rect1.width + gap < rect2.x ||
@@ -292,7 +292,7 @@
         function initDragEvents(windowEl, windowInfo) {
             windowEl.addEventListener('mousedown', (e) => {
                 isDragging = true;
-                dragTarget = windowInfo;）
+                dragTarget = windowInfo;
                 const rect = windowEl.getBoundingClientRect();
                 dragOffsetX = e.clientX - rect.left;
                 dragOffsetY = e.clientY - rect.top;
@@ -341,7 +341,7 @@
             setTimeout(spreadWindows, CONFIG.SPREAD_DELAY);
         }
 
-        function spreadWindows()
+        function spreadWindows() {
             const placedWindows = [];
             
             windowList.forEach(windowInfo => {
@@ -421,7 +421,7 @@
         });
 
         document.addEventListener('mouseup', () => {
-            if (dragTarget) {）
+            if (dragTarget) {
                 dragTarget.element.style.zIndex = 100;
             }
             isDragging = false;
