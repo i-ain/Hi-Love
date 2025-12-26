@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Hi Rara</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Times New Roman', serif;
+        }
+        /* 控制按钮容器 */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        /* 控制按钮样式 */
+        .control-btn {
+            padding: 8px 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .control-btn:hover {
+            background-color: #cc0000;
+        }
+        /* 语言切换按钮特殊样式 */
+        #langBtn {
+            background-color: #0066cc;
+        }
+        #langBtn:hover {
+            background-color: #0055aa;
+        }/
+        .tip-window {
+            position: absolute;
+            height: 40px;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 14px;
+            text-align: center;
+            white-space: normal;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: move;
+            user-select: none;  
+        }
+    </style>
+</head>
+<body>
+    <!-- 控制按钮面板 -->
+    <div class="control-panel">
+        <button class="control-btn" id="returnBtn">Kembali ke Hati</button>
+        <button class="control-btn" id="clearBtn">Kosongkan Jendela</button>
+        <button class="control-btn" id="langBtn">日本語</button>
+    </div>
+
+    <script>
+        const CONFIG = {
+            RETURN_DURATION: 300,
+            CREATE_WINDOW_DELAY: 80, 
+            SPREAD_DELAY: 800, 
+            GATHER_WIDTH: 200,
+            TIP_WINDOW_HEIGHT: 40, 
+            NUM_WINDOWS: 100,
+            WINDOW_GAP: 10,
+            MAX_POS_TRIES: 10
+        };
+
+        // 日语提示文本
+        const TIPS_JA = [
+            'たくさん水を飲んでね', '良きことがありますように', '愛しています', '会いたいです', '規則正しく食事をしてね',
+            '体を大切にしてね', '今、心の状態はどう？', '安全に気をつけてね', '自分をもっと大切にして',
+            '今日も一日お疲れ様', '規則正しく寝てね', '次に会えるのを楽しみにしています', 'あなたはとても綺麗だよ',
+            '努力は必ず実を結ぶ', 'いつも健康で幸せでありますように', '早めに休んでね',
+            '悩み事があなたから遠ざかりますように', '夜更かしは控えてね', '今日の一日はどうだった？',
+            '寒いから風邪をひかないように気をつけて', '一日三食規則正しく食べてね', '無理をしないで',
+            'あなたはすごいよ',
+            '全てが思い通りになりますように', 'いつも健康で幸せでありますように', '自分にプレッシャーをかけないで',
+            '雨で道が滑るから、ゆっくり歩いてね', '雨の後の風邪に気をつけて',
+            '落ち着いて、急がなくていいよ', '自分をもっと褒めてあげて', '幸運が訪れますように',
+            '長時間働く時は時々休憩して', '自分へのご褒美をあげて', '今何をしているの？',
+            '完璧である必要はないよ', '無条件であなたを応援してる', '泣いても大丈夫', '太陽の下で輝いて',
+            '窓の外を見てみて', '好きなことをして', 'いつでも連絡してね', '好きだよ',
+            '世界で一番素敵なキティ', '毎日小さなサプライズがありますように', '今日は何か面白いことがあった？',
+            'あなたは全ての素敵なものに値する', '会える日を楽しみにしている', 'あなたの頑張りを見てるよ',
+            'あなたが幸せだと私も嬉しい','ぐっすり眠って','いい夢を見てね',
+            'あなたは唯一無二の存在', 'おはよう', '自分の気持ちを無視しないで', '優しすぎないで',
+            '優しい子はよく傷つく', '弱さを見せても大丈夫', 'こんにちは',
+            'あなたは最善を尽くしたよ', '自分に厳しすぎないで', '自分をもっと認めてあげて',
+            'あなたの全ての側面が好き', 'あなたの存在自体がとても貴重', 'ゆっくり、お互いを理解し合っている',
+            '糖分摂取を控えて', '健康的なストレス解消法を使って', 'あなたの調子が悪いと心配になるよ',
+            '何もしなくても大丈夫', '毎晩素敵な夢が見られますように',
+            'あなたは自分が思っているよりもっと素晴らしい',
+            'おやすみ', 'あなたのいたずらっぽさが特別だよ', 'あなたを信じている',
+            '不快に感じることは伝えてね', 'あなたは決して負担にならない',
+            '私たちはいつもあなたの味方', 'あなたの健康が気にかかる',
+        ];
+        
+        // 印尼语提示文本
+        const TIPS_ID = [
+            'Minum air banyak ya', 'Semoga dapat kebaikan', 'Aku mencintaimu', 'Aku merindukanmu', 'Makan teratur ya',
+            'Jaga dirimu baik-baik', 'Bagaimana hatimu sekarang?', 'Perhatikan keselamatan ya', 'Pedulikan dirimu lebih',
+            'Kamu sudah bekerja keras hari ini', 'Tidur teratur ya', 'Menantikan pertemuan selanjutnya', 'Kamu sangat cantik',
+            'Usahamu pasti berbuah hasil', 'Selamat dan sehat selalu', 'Istirahat lebih awal ya',
+            'Semoga masalah menjauhi kamu', 'Kurangi begadang ya', 'Bagaimana harimu hari ini?',
+            'Cuaca dingin, hati-hati tidak terkena angin', 'Makan tiga kali teratur ya', 'Jangan paksakan dirimu',
+            'Kamu luar biasa','Tidur nyenyak', 'mimpi indah',
+            'Semoga segala sesuatunya sesuai keinginan', 'Selamat dan bahagia selalu', 'Jangan beri tekanan pada dirimu',
+            'Hujan, jalan licin, berjalan perlahan ya', 'Hati-hati tidak angin setelah hujan',
+            'Tenang, tidak perlu terburu-buru', 'Sering puji dirimu sendiri', 'Semoga keberuntungan menyapa',
+            'Istirahat sesekali saat kerja lama', 'Berikan hadiah untuk dirimu', 'Apa yang sedang kamu lakukan?',
+            'Tidak perlu sempurna', 'Mendukungmu tanpa syarat', 'Tidak apa-apa menangis', 'Bersinar di bawah sinar matahari',
+            'Lihat ke luar jendela', 'Lakukan hal yang kamu sukai', 'Selalu bisa hubungi aku', 'Aku menyukaimu',
+            'Kitty terbaik di dunia', 'Semoga setiap hari ada kejutan kecil', 'Apa hari ini ada hal lucu?',
+            'Kamu pantas segala hal indah', 'Menantikan hari bertemu', 'Aku lihat betapa kerasmu bekerja',
+            'Aku senang jika kamu bahagia',
+            'Kamu unik dan tak tergantikan', 'Selamat pagi', 'Jangan abaikan perasaanmu', 'Jangan terlalu baik hati',
+            'Anak baik hati sering tersakiti', 'Tidak apa-apa menunjukkan kelemahan', 'Selamat siang',
+            'Kamu sudah lakukan yang terbaik', 'Jangan terlalu keras pada dirimu', 'Sering apresiasi dirimu sendiri',
+            'Aku cintai setiap sisi dirimu', 'Keberadaanmu sudah sangat berharga', 'Perlahan, kita semakin memahami',
+            'Kurangi asupan gula', 'Gunakan cara sehat atasi stres', 'Aku akan prihatin jika kamu tidak baik',
+            'Tidak apa-apa tidak melakukan apa-apa', 'Semoga setiap malam ada mimpi indah',
+            'Kamu lebih hebat dari yang kamu pikir',
+            'Selamat malam', 'Sifat nakalmu membuatmu spesial', 'Aku percaya padamu',
+            'Ungkapkan hal yang membuatmu tidak senang', 'Kamu tidak akan pernah menjadi beban',
+            'Kita selalu ada di belakangmu', 'Aku peduli dengan kesehatanmu',
+        ];
+        
+        const BG_COLORS = [
+            // 红色系
+            'lightpink', 'pink', 'palevioletred', 'lightsalmon', 'salmon', 'darksalmon',
+            'lightcoral', 'indianred', 'crimson', 'maroon',
+            // 橙色/黄色系
+            'darkorange', 'orange', 'gold', 'yellow', 'lightyellow', 'lemonchiffon',
+            'lightgoldenrodyellow', 'papayawhip', 'moccasin', 'peachpuff', 'palegoldenrod',
+            'khaki', 'cornsilk',
+            // 绿色系
+            'lawngreen', 'limegreen', 'lime', 'forestgreen', 'green', 'greenyellow',
+            'yellowgreen', 'springgreen', 'mediumspringgreen', 'lightgreen', 'palegreen',
+            'mediumseagreen', 'seagreen', 'darkseagreen', 'aquamarine', 'mediumaquamarine',
+            'turquoise', 'lightseagreen', 'teal', 'cyan', 'lightcyan',
+            // 蓝色系
+            'cadetblue', 'steelblue', 'lightsteelblue', 'lightblue', 'skyblue',
+            'lightskyblue', 'deepskyblue', 'dodgerblue', 'cornflowerblue', 'royalblue',
+            'blue', 'mediumblue', 'slateblue', 'mediumslateblue', 'powderblue',
+            // 紫色系
+            'lavender', 'thistle', 'plum', 'violet', 'orchid', 'mediumorchid',
+            'blueviolet', 'indigo', 'purple', 'mediumpurple',
+            // 棕色/米色系
+            'wheat', 'tan', 'burlywood', 'rosybrown', 'sandybrown', 'goldenrod', 'bisque',
+            // 浅色系/中性色
+            'white', 'lightgray', 'gainsboro', 'lightgrey', 'silver', 'lightslategray',
+            'lightslategrey', 'lavenderblush', 'mintcream', 'aliceblue', 'honeydew', 'ivory'
+        ];
+
+        let currentLanguage = 'id';
+        let TIPS = TIPS_ID;
+        
+        const CHAR_WIDTH_CONFIG = {
+            'id': 8,
+            'ja': 14 
+        };
+        ）
+        const BASE_WIDTH_CONFIG = {
+            'id': 0,
+            'ja': 30  
+        };
+        const MAX_WIDTH_CONFIG = {
+            'id': 800, 
+            'ja': 900
+        };
+        
+        let windowList = [];
+        let screenWidth = window.innerWidth;
+        let screenHeight = window.innerHeight;
+        let isDragging = false;
+        let dragTarget = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+）
+        function isOverlapping(rect1, rect2, gap) {
+            return !(
+                rect1.x + rect1.width + gap < rect2.x ||
+                rect1.x > rect2.x + rect2.width + gap ||
+                rect1.y + rect1.height + gap < rect2.y ||
+                rect1.y > rect2.y + rect2.height + gap
+            );
+        }
+
+        function getNonOverlappingPosition(width, height, existingWindows) {
+            let tries = 0;
+            let pos;
+            while (tries < CONFIG.MAX_POS_TRIES) {
+                // 生成基础随机位置
+                const x = Math.random() * (screenWidth - width);
+                const y = Math.random() * (screenHeight - height);
+                const newRect = { x, y, width, height };
+               
+                let overlap = false;
+                for (const win of existingWindows) {
+                    if (win.currentX === undefined) continue; 
+                    const existingRect = {
+                        x: win.currentX,
+                        y: win.currentY,
+                        width: win.currentWidth,
+                        height: CONFIG.TIP_WINDOW_HEIGHT
+                    };
+                    if (isOverlapping(newRect, existingRect, CONFIG.WINDOW_GAP)) {
+                        overlap = true;
+                        break;
+                    }
+                }  
+                if (!overlap) {
+                    pos = { x, y };
+                    break;
+                }
+                tries++;
+            }
+            if (!pos) {
+                pos = {
+                    x: Math.random() * (screenWidth - width),
+                    y: Math.random() * (screenHeight - height)
+                };
+            } 
+            return getSafePosition(pos.x, pos.y, width);
+        }
+
+        function getHeartPoints(count, scale = 25) {
+            const points = [];
+            for (let i = 0; i < count; i++) {
+                const ratio = i / (count - 1);
+                let t;
+                if (ratio < 0.5) {
+                    t = Math.PI * Math.pow(2 * ratio, 1.2);
+                } else {
+                    t = Math.PI + Math.PI * Math.pow(2 * (ratio - 0.5), 0.8);
+                }
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+                const pointX = screenWidth / 2 + x * scale;
+                const pointY = screenHeight / 2 - (y + 2) * scale;
+                points.push({ x: Math.round(pointX), y: Math.round(pointY) });
+            }
+            return points;
+        }
+        function calculateAdaptiveWidth(text) {
+            const baseWidth = BASE_WIDTH_CONFIG[currentLanguage] || 0;
+            const charWidth = CHAR_WIDTH_CONFIG[currentLanguage] || 8;
+            const maxWidth = MAX_WIDTH_CONFIG[currentLanguage] || 800;
+            let calcWidth = baseWidth + text.length * charWidth;
+           
+            if (currentLanguage === 'ja') {
+                if (text.length > 20) {
+                    calcWidth = calcWidth * 1.2;
+                } else if (text.length > 10) {
+                    calcWidth = calcWidth * 1.1;
+                }
+                calcWidth = Math.max(calcWidth, text.length * 12);
+            }
+            
+            return Math.max(150, Math.min(calcWidth, maxWidth));
+        }
+
+        function getSafePosition(x, y, width) {
+            const safeX = Math.max(0, Math.min(x, screenWidth - width));
+            const safeY = Math.max(0, Math.min(y, screenHeight - CONFIG.TIP_WINDOW_HEIGHT));
+            return { x: safeX, y: safeY };
+        }
+
+        function initDragEvents(windowEl, windowInfo) {
+            windowEl.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                dragTarget = windowInfo;）
+                const rect = windowEl.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                windowEl.style.zIndex = 999;
+                e.preventDefault();
+            });
+        }
+
+        function createTipWindow(pos) {
+            const windowEl = document.createElement('div');
+            windowEl.className = 'tip-window';
+            
+            const tipText = TIPS[Math.floor(Math.random() * TIPS.length)];
+            const bgColor = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
+
+            windowEl.textContent = tipText;
+            windowEl.style.backgroundColor = bgColor;
+
+            const initialWidth = CONFIG.GATHER_WIDTH;
+            const safePos = getSafePosition(pos.x, pos.y, initialWidth);
+            
+            windowEl.style.left = `${safePos.x}px`;
+            windowEl.style.top = `${safePos.y}px`;
+            windowEl.style.width = `${initialWidth}px`;
+            
+            document.body.appendChild(windowEl);
+            const windowInfo = {
+                element: windowEl,
+                originalX: safePos.x,
+                originalY: safePos.y,
+                tipText: tipText,
+                originalWidth: initialWidth
+            };
+            windowList.push(windowInfo);
+            initDragEvents(windowEl, windowInfo);
+            return windowInfo;
+        }
+
+        async function createHeartWindows() {
+            clearAllWindows();
+            const heartPoints = getHeartPoints(CONFIG.NUM_WINDOWS);
+            for (let i = 0; i < heartPoints.length; i++) {
+                createTipWindow(heartPoints[i]);
+                await new Promise(resolve => setTimeout(resolve, CONFIG.CREATE_WINDOW_DELAY));
+            } 
+            setTimeout(spreadWindows, CONFIG.SPREAD_DELAY);
+        }
+
+        function spreadWindows()
+            const placedWindows = [];
+            
+            windowList.forEach(windowInfo => {
+                const { element, tipText } = windowInfo;
+                const adaptiveWidth = calculateAdaptiveWidth(tipText);
+                const targetPos = getNonOverlappingPosition(
+                    adaptiveWidth, 
+                    CONFIG.TIP_WINDOW_HEIGHT, 
+                    placedWindows
+                );
+
+                element.style.left = `${targetPos.x}px`;
+                element.style.top = `${targetPos.y}px`;
+                element.style.width = `${adaptiveWidth}px`;
+                
+                windowInfo.currentX = targetPos.x;
+                windowInfo.currentY = targetPos.y;
+                windowInfo.currentWidth = adaptiveWidth;
+                placedWindows.push(windowInfo);
+            });
+        }
+
+        function returnToHeart() {
+            windowList.forEach(windowInfo => {
+                const { element, originalX, originalY, originalWidth } = windowInfo;
+                element.style.left = `${originalX}px`;
+                element.style.top = `${originalY}px`;
+                element.style.width = `${originalWidth}px`;
+                element.style.zIndex = 100;
+            });
+        }
+
+        function clearAllWindows() {
+            windowList.forEach(windowInfo => {
+                if (windowInfo.element && windowInfo.element.parentNode) {
+                    windowInfo.element.parentNode.removeChild(windowInfo.element);
+                }
+            });
+            windowList = [];
+            isDragging = false;
+            dragTarget = null;
+        }
+
+        // 切换语言
+        function toggleLanguage() {
+            if (currentLanguage === 'id') {
+                currentLanguage = 'ja';
+                TIPS = TIPS_JA;
+                document.getElementById('pageTitle').textContent = 'Hi Kurusu';
+                document.getElementById('returnBtn').textContent = 'ハートに戻る';
+                document.getElementById('clearBtn').textContent = 'ウィンドウをクリア';
+                document.getElementById('langBtn').textContent = 'Bahasa Indonesia';
+            } else {
+                currentLanguage = 'id';
+                TIPS = TIPS_ID;
+                document.getElementById('pageTitle').textContent = 'Hi Rara';
+                document.getElementById('returnBtn').textContent = 'Kembali ke Hati';
+                document.getElementById('clearBtn').textContent = 'Kosongkan Jendela';
+                document.getElementById('langBtn').textContent = '日本語';
+            }
+            createHeartWindows();
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !dragTarget) return;
+            const newX = e.clientX - dragOffsetX;
+            const newY = e.clientY - dragOffsetY;
+            const safePos = getSafePosition(
+                newX, 
+                newY, 
+                dragTarget.currentWidth || dragTarget.originalWidth
+            );   
+            dragTarget.element.style.left = `${safePos.x}px`;
+            dragTarget.element.style.top = `${safePos.y}px`;
+            dragTarget.currentX = safePos.x;
+            dragTarget.currentY = safePos.y;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (dragTarget) {）
+                dragTarget.element.style.zIndex = 100;
+            }
+            isDragging = false;
+            dragTarget = null;
+        });
+
+        window.addEventListener('resize', () => {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+        });
+        
+        document.getElementById('returnBtn').addEventListener('click', returnToHeart);
+        document.getElementById('clearBtn').addEventListener('click', clearAllWindows);
+        document.getElementById('langBtn').addEventListener('click', toggleLanguage);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                clearAllWindows();
+            }
+        });   
+        window.addEventListener('load', () => {
+            currentLanguage = 'id';
+            TIPS = TIPS_ID;
+            document.getElementById('pageTitle').textContent = 'Hi Rara';
+            document.getElementById('returnBtn').textContent = 'Kembali ke Hati';
+            document.getElementById('clearBtn').textContent = 'Kosongkan Jendela';
+            document.getElementById('langBtn').textContent = '日本語';
+            
+            createHeartWindows();
+        });
+    </script>
+</body>
+</html>
