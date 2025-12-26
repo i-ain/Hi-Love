@@ -2,42 +2,50 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="pageTitle">Hi Rara</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
         }
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             font-family: 'Times New Roman', serif;
+            width: 100vw;
+            height: 100vh;
+            overscroll-behavior: none;
+            touch-action: manipulation;
         }
-        /* 控制按钮容器 */
+        /* 控制按钮容器 - 移动端优化 */
         .control-panel {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 10px;
+            right: 10px;
             z-index: 9999;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
-        /* 控制按钮样式 */
+        /* 控制按钮样式 - 移动端优化 */
         .control-btn {
-            padding: 8px 16px;
+            padding: 12px 16px;
             font-family: 'Courier New', monospace;
             font-size: 14px;
             font-weight: bold;
             background-color: red;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.2s;
+            -webkit-appearance: none;
+            user-select: none;
         }
         .control-btn:hover {
             background-color: #cc0000;
@@ -49,6 +57,7 @@
         #langBtn:hover {
             background-color: #0055aa;
         }
+        
         .tip-window {
             position: absolute;
             height: 40px;
@@ -64,7 +73,61 @@
             overflow: hidden;
             transition: all 0.3s ease;
             cursor: move;
-            user-select: none;  
+            user-select: none;
+            touch-action: none;
+            word-break: break-word;
+            word-wrap: break-word;
+        }
+        
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .control-panel {
+                top: 5px;
+                right: 5px;
+                gap: 5px;
+            }
+            .control-btn {
+                padding: 10px 12px;
+                font-size: 12px;
+                border-radius: 5px;
+            }
+            .tip-window {
+                height: 35px;
+                padding: 0 8px;
+                font-size: 13px;
+                border-radius: 6px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .control-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                width: calc(100% - 20px);
+            }
+            .control-btn {
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+            .tip-window {
+                height: 32px;
+                padding: 0 6px;
+                font-size: 12px;
+            }
+        }
+        
+        /* 防止iOS文本选择 */
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* 防止长按菜单 */
+        * {
+            -webkit-touch-callout: none;
         }
     </style>
 </head>
@@ -79,15 +142,18 @@
     <script>
         const CONFIG = {
             RETURN_DURATION: 300,
-            CREATE_WINDOW_DELAY: 80, 
-            SPREAD_DELAY: 800, 
-            GATHER_WIDTH: 200,
-            TIP_WINDOW_HEIGHT: 40, 
+            CREATE_WINDOW_DELAY: 80,
+            SPREAD_DELAY: 800,
+            GATHER_WIDTH: 150,
+            TIP_WINDOW_HEIGHT: 40,
             NUM_WINDOWS: 100,
             WINDOW_GAP: 10,
             MAX_POS_TRIES: 10
         };
 
+        // 移动端检测
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         // 日语提示文本
         const TIPS_JA = [
             'たくさん水を飲んでね', '良きことがありますように', '愛しています', '会いたいです', '規則正しく食事をしてね',
@@ -149,28 +215,19 @@
         ];
         
         const BG_COLORS = [
-            // 红色系
             'lightpink', 'pink', 'palevioletred', 'lightsalmon', 'salmon', 'darksalmon',
-            'lightcoral', 'indianred', 'crimson', 'maroon',
-            // 橙色/黄色系
-            'darkorange', 'orange', 'gold', 'yellow', 'lightyellow', 'lemonchiffon',
-            'lightgoldenrodyellow', 'papayawhip', 'moccasin', 'peachpuff', 'palegoldenrod',
-            'khaki', 'cornsilk',
-            // 绿色系
-            'lawngreen', 'limegreen', 'lime', 'forestgreen', 'green', 'greenyellow',
-            'yellowgreen', 'springgreen', 'mediumspringgreen', 'lightgreen', 'palegreen',
-            'mediumseagreen', 'seagreen', 'darkseagreen', 'aquamarine', 'mediumaquamarine',
-            'turquoise', 'lightseagreen', 'teal', 'cyan', 'lightcyan',
-            // 蓝色系
-            'cadetblue', 'steelblue', 'lightsteelblue', 'lightblue', 'skyblue',
-            'lightskyblue', 'deepskyblue', 'dodgerblue', 'cornflowerblue', 'royalblue',
-            'blue', 'mediumblue', 'slateblue', 'mediumslateblue', 'powderblue',
-            // 紫色系
-            'lavender', 'thistle', 'plum', 'violet', 'orchid', 'mediumorchid',
-            'blueviolet', 'indigo', 'purple', 'mediumpurple',
-            // 棕色/米色系
+            'lightcoral', 'indianred', 'crimson', 'maroon', 'darkorange', 'orange', 'gold',
+            'yellow', 'lightyellow', 'lemonchiffon', 'lightgoldenrodyellow', 'papayawhip',
+            'moccasin', 'peachpuff', 'palegoldenrod', 'khaki', 'cornsilk', 'lawngreen',
+            'limegreen', 'lime', 'forestgreen', 'green', 'greenyellow', 'yellowgreen',
+            'springgreen', 'mediumspringgreen', 'lightgreen', 'palegreen', 'mediumseagreen',
+            'seagreen', 'darkseagreen', 'aquamarine', 'mediumaquamarine', 'turquoise',
+            'lightseagreen', 'teal', 'cyan', 'lightcyan', 'cadetblue', 'steelblue',
+            'lightsteelblue', 'lightblue', 'skyblue', 'lightskyblue', 'deepskyblue',
+            'dodgerblue', 'cornflowerblue', 'royalblue', 'blue', 'mediumblue', 'slateblue',
+            'mediumslateblue', 'powderblue', 'lavender', 'thistle', 'plum', 'violet',
+            'orchid', 'mediumorchid', 'blueviolet', 'indigo', 'purple', 'mediumpurple',
             'wheat', 'tan', 'burlywood', 'rosybrown', 'sandybrown', 'goldenrod', 'bisque',
-            // 浅色系/中性色
             'white', 'lightgray', 'gainsboro', 'lightgrey', 'silver', 'lightslategray',
             'lightslategrey', 'lavenderblush', 'mintcream', 'aliceblue', 'honeydew', 'ivory'
         ];
@@ -179,17 +236,18 @@
         let TIPS = TIPS_ID;
         
         const CHAR_WIDTH_CONFIG = {
-            'id': 8,
-            'ja': 14 
+            'id': isMobile ? 6 : 8,
+            'ja': isMobile ? 10 : 14
         };
         
         const BASE_WIDTH_CONFIG = {
-            'id': 0,
-            'ja': 30  
+            'id': isMobile ? -10 : 0,
+            'ja': isMobile ? 20 : 30
         };
+        
         const MAX_WIDTH_CONFIG = {
-            'id': 800, 
-            'ja': 900
+            'id': isMobile ? 300 : 800,
+            'ja': isMobile ? 350 : 900
         };
         
         let windowList = [];
@@ -199,6 +257,17 @@
         let dragTarget = null;
         let dragOffsetX = 0;
         let dragOffsetY = 0;
+
+        // 移动端自适应心形大小
+        function getHeartScale() {
+            if (isMobile) {
+                const minDimension = Math.min(screenWidth, screenHeight);
+                if (minDimension < 400) return 15;
+                if (minDimension < 600) return 20;
+                return 25;
+            }
+            return 25;
+        }
 
         function isOverlapping(rect1, rect2, gap) {
             return !(
@@ -213,14 +282,13 @@
             let tries = 0;
             let pos;
             while (tries < CONFIG.MAX_POS_TRIES) {
-                // 生成基础随机位置
                 const x = Math.random() * (screenWidth - width);
                 const y = Math.random() * (screenHeight - height);
                 const newRect = { x, y, width, height };
                
                 let overlap = false;
                 for (const win of existingWindows) {
-                    if (win.currentX === undefined) continue; 
+                    if (win.currentX === undefined) continue;
                     const existingRect = {
                         x: win.currentX,
                         y: win.currentY,
@@ -231,44 +299,59 @@
                         overlap = true;
                         break;
                     }
-                }  
+                }
+                
                 if (!overlap) {
                     pos = { x, y };
                     break;
                 }
                 tries++;
             }
+            
             if (!pos) {
                 pos = {
                     x: Math.random() * (screenWidth - width),
                     y: Math.random() * (screenHeight - height)
                 };
-            } 
+            }
+            
             return getSafePosition(pos.x, pos.y, width);
         }
 
-        function getHeartPoints(count, scale = 25) {
+        function getHeartPoints(count) {
             const points = [];
+            const scale = getHeartScale();
+            
             for (let i = 0; i < count; i++) {
                 const ratio = i / (count - 1);
                 let t;
+                
                 if (ratio < 0.5) {
                     t = Math.PI * Math.pow(2 * ratio, 1.2);
                 } else {
                     t = Math.PI + Math.PI * Math.pow(2 * (ratio - 0.5), 0.8);
                 }
+                
                 const x = 16 * Math.pow(Math.sin(t), 3);
                 const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+                
+                // 确保心形在屏幕中央
                 const pointX = screenWidth / 2 + x * scale;
                 const pointY = screenHeight / 2 - (y + 2) * scale;
-                points.push({ x: Math.round(pointX), y: Math.round(pointY) });
+                
+                points.push({ 
+                    x: Math.max(0, Math.min(pointX, screenWidth - CONFIG.GATHER_WIDTH)),
+                    y: Math.max(0, Math.min(pointY, screenHeight - CONFIG.TIP_WINDOW_HEIGHT))
+                });
             }
             return points;
         }
+
         function calculateAdaptiveWidth(text) {
             const baseWidth = BASE_WIDTH_CONFIG[currentLanguage] || 0;
             const charWidth = CHAR_WIDTH_CONFIG[currentLanguage] || 8;
             const maxWidth = MAX_WIDTH_CONFIG[currentLanguage] || 800;
+            
             let calcWidth = baseWidth + text.length * charWidth;
            
             if (currentLanguage === 'ja') {
@@ -277,10 +360,14 @@
                 } else if (text.length > 10) {
                     calcWidth = calcWidth * 1.1;
                 }
-                calcWidth = Math.max(calcWidth, text.length * 12);
+                calcWidth = Math.max(calcWidth, text.length * (isMobile ? 10 : 12));
             }
             
-            return Math.max(150, Math.min(calcWidth, maxWidth));
+            // 移动端进一步限制宽度
+            const minWidth = isMobile ? 120 : 150;
+            const actualMaxWidth = Math.min(maxWidth, screenWidth - 20);
+            
+            return Math.max(minWidth, Math.min(calcWidth, actualMaxWidth));
         }
 
         function getSafePosition(x, y, width) {
@@ -290,14 +377,28 @@
         }
 
         function initDragEvents(windowEl, windowInfo) {
-            windowEl.addEventListener('mousedown', (e) => {
+            const startDrag = (clientX, clientY) => {
                 isDragging = true;
                 dragTarget = windowInfo;
                 const rect = windowEl.getBoundingClientRect();
-                dragOffsetX = e.clientX - rect.left;
-                dragOffsetY = e.clientY - rect.top;
+                dragOffsetX = clientX - rect.left;
+                dragOffsetY = clientY - rect.top;
                 windowEl.style.zIndex = 999;
+            };
+
+            // 鼠标事件
+            windowEl.addEventListener('mousedown', (e) => {
+                startDrag(e.clientX, e.clientY);
                 e.preventDefault();
+            });
+
+            // 触摸事件（移动端）
+            windowEl.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    startDrag(touch.clientX, touch.clientY);
+                    e.preventDefault();
+                }
             });
         }
 
@@ -311,7 +412,8 @@
             windowEl.textContent = tipText;
             windowEl.style.backgroundColor = bgColor;
 
-            const initialWidth = CONFIG.GATHER_WIDTH;
+            // 移动端调整初始宽度
+            const initialWidth = isMobile ? 120 : CONFIG.GATHER_WIDTH;
             const safePos = getSafePosition(pos.x, pos.y, initialWidth);
             
             windowEl.style.left = `${safePos.x}px`;
@@ -319,6 +421,7 @@
             windowEl.style.width = `${initialWidth}px`;
             
             document.body.appendChild(windowEl);
+            
             const windowInfo = {
                 element: windowEl,
                 originalX: safePos.x,
@@ -326,6 +429,7 @@
                 tipText: tipText,
                 originalWidth: initialWidth
             };
+            
             windowList.push(windowInfo);
             initDragEvents(windowEl, windowInfo);
             return windowInfo;
@@ -334,10 +438,12 @@
         async function createHeartWindows() {
             clearAllWindows();
             const heartPoints = getHeartPoints(CONFIG.NUM_WINDOWS);
+            
             for (let i = 0; i < heartPoints.length; i++) {
                 createTipWindow(heartPoints[i]);
                 await new Promise(resolve => setTimeout(resolve, CONFIG.CREATE_WINDOW_DELAY));
-            } 
+            }
+            
             setTimeout(spreadWindows, CONFIG.SPREAD_DELAY);
         }
 
@@ -348,8 +454,8 @@
                 const { element, tipText } = windowInfo;
                 const adaptiveWidth = calculateAdaptiveWidth(tipText);
                 const targetPos = getNonOverlappingPosition(
-                    adaptiveWidth, 
-                    CONFIG.TIP_WINDOW_HEIGHT, 
+                    adaptiveWidth,
+                    CONFIG.TIP_WINDOW_HEIGHT,
                     placedWindows
                 );
 
@@ -390,14 +496,14 @@
             if (currentLanguage === 'id') {
                 currentLanguage = 'ja';
                 TIPS = TIPS_JA;
-                document.getElementById('pageTitle').textContent = 'Hi Kurusu';
+                document.getElementById('pageTitle').textContent = '愛しています';
                 document.getElementById('returnBtn').textContent = 'ハートに戻る';
                 document.getElementById('clearBtn').textContent = 'ウィンドウをクリア';
                 document.getElementById('langBtn').textContent = 'Bahasa Indonesia';
             } else {
                 currentLanguage = 'id';
                 TIPS = TIPS_ID;
-                document.getElementById('pageTitle').textContent = 'Hi Rara';
+                document.getElementById('pageTitle').textContent = 'Aku mencintaimu';
                 document.getElementById('returnBtn').textContent = 'Kembali ke Hati';
                 document.getElementById('clearBtn').textContent = 'Kosongkan Jendela';
                 document.getElementById('langBtn').textContent = '日本語';
@@ -405,19 +511,27 @@
             createHeartWindows();
         }
 
-        document.addEventListener('mousemove', (e) => {
+        // 处理拖动（鼠标和触摸）
+        function handleMove(clientX, clientY) {
             if (!isDragging || !dragTarget) return;
-            const newX = e.clientX - dragOffsetX;
-            const newY = e.clientY - dragOffsetY;
+            
+            const newX = clientX - dragOffsetX;
+            const newY = clientY - dragOffsetY;
             const safePos = getSafePosition(
-                newX, 
-                newY, 
+                newX,
+                newY,
                 dragTarget.currentWidth || dragTarget.originalWidth
-            );   
+            );
+            
             dragTarget.element.style.left = `${safePos.x}px`;
             dragTarget.element.style.top = `${safePos.y}px`;
             dragTarget.currentX = safePos.x;
             dragTarget.currentY = safePos.y;
+        }
+
+        // 鼠标事件
+        document.addEventListener('mousemove', (e) => {
+            handleMove(e.clientX, e.clientY);
         });
 
         document.addEventListener('mouseup', () => {
@@ -428,29 +542,85 @@
             dragTarget = null;
         });
 
+        // 触摸事件（移动端）
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                handleMove(touch.clientX, touch.clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            if (dragTarget) {
+                dragTarget.element.style.zIndex = 100;
+            }
+            isDragging = false;
+            dragTarget = null;
+        });
+
+        // 窗口大小变化处理
         window.addEventListener('resize', () => {
             screenWidth = window.innerWidth;
             screenHeight = window.innerHeight;
+            
+            // 重新调整所有窗口位置，防止超出屏幕
+            windowList.forEach(windowInfo => {
+                const { element, currentX, currentY, currentWidth, originalX, originalY, originalWidth } = windowInfo;
+                
+                if (element) {
+                    const width = currentWidth || originalWidth;
+                    const x = currentX !== undefined ? currentX : originalX;
+                    const y = currentY !== undefined ? currentY : originalY;
+                    
+                    const safePos = getSafePosition(x, y, width);
+                    element.style.left = `${safePos.x}px`;
+                    element.style.top = `${safePos.y}px`;
+                    
+                    windowInfo.currentX = safePos.x;
+                    windowInfo.currentY = safePos.y;
+                }
+            });
         });
-        
+
+        // 阻止移动端默认行为
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('control-btn')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 初始化按钮事件
         document.getElementById('returnBtn').addEventListener('click', returnToHeart);
         document.getElementById('clearBtn').addEventListener('click', clearAllWindows);
         document.getElementById('langBtn').addEventListener('click', toggleLanguage);
         
+        // ESC键清除所有窗口
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 clearAllWindows();
             }
-        });   
+        });
+
+        // 页面加载完成
         window.addEventListener('load', () => {
+            // 设置初始语言
             currentLanguage = 'id';
             TIPS = TIPS_ID;
-            document.getElementById('pageTitle').textContent = 'Hi Rara';
+            document.getElementById('pageTitle').textContent = 'Aku mencintaimu';
             document.getElementById('returnBtn').textContent = 'Kembali ke Hati';
             document.getElementById('clearBtn').textContent = 'Kosongkan Jendela';
             document.getElementById('langBtn').textContent = '日本語';
             
+            // 创建心形窗口
             createHeartWindows();
+            
+            // 移动端提示
+            if (isMobile) {
+                setTimeout(() => {
+                    alert('Tips: 点击按钮切换语言，长按窗口拖动，ESC键清除所有窗口。');
+                }, 1000);
+            }
         });
     </script>
 </body>
